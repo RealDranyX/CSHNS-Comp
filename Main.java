@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
 
 public class Main {
     private static final Color INK = new Color(47, 45, 40);
@@ -29,6 +30,13 @@ public class Main {
     private final JLabel[] materialTotals = new JLabel[MATERIALS.length];
     private final JTextField customer = new JTextField();
     private final JTextArea notes = new JTextArea(3, 18);
+    private long miningGold, stoneCost = 10, ironCost = 50, helperCost = 100;
+    private int goldPerClick = 1, helperRate, stoneLevels, ironLevels, helperLevels;
+    private final JLabel miningBalance = new JLabel("0 gold");
+    private final JLabel miningStats = new JLabel();
+    private final JLabel miningMessage = new JLabel("Click the gold to start mining.");
+    private JButton stoneUpgrade, ironUpgrade, helperUpgrade;
+    private Timer miningTimer;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Main().open());
@@ -51,6 +59,7 @@ public class Main {
         root.add(section("Gunter's Forge", "Handmade in the royal town of Mautern"), BorderLayout.NORTH);
         tabs.addTab("Place an order", storePage());
         tabs.addTab("Shop queue", queuePage());
+        tabs.addTab("Mining Adventure", miningPage());
         root.add(tabs, BorderLayout.CENTER);
         return root;
     }
@@ -176,6 +185,145 @@ public class Main {
         page.add(pageScroll, BorderLayout.CENTER);
         refreshQueue();
         return page;
+    }
+
+    private JPanel miningPage() {
+        JPanel game = new JPanel(new BorderLayout(16, 0));
+        game.setOpaque(false);
+        game.setBorder(new EmptyBorder(18, 4, 4, 4));
+
+        JPanel mine = panel();
+        mine.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0; c.gridy = 0; c.weightx = 1; c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(8, 12, 8, 12);
+        JLabel heading = new JLabel("Gunter's Mining Adventure");
+        heading.setFont(new Font("Serif", Font.BOLD, 25)); heading.setForeground(INK);
+        mine.add(heading, c);
+        c.gridy++;
+        JLabel intro = new JLabel("Mine gold, improve your tools, and build a richer forge.");
+        intro.setForeground(new Color(111, 105, 95)); mine.add(intro, c);
+        c.gridy++;
+        miningBalance.setFont(new Font("Serif", Font.BOLD, 42)); miningBalance.setForeground(new Color(151, 105, 29));
+        mine.add(miningBalance, c);
+        c.gridy++;
+        miningStats.setFont(new Font("SansSerif", Font.PLAIN, 14)); miningStats.setForeground(INK);
+        mine.add(miningStats, c);
+        c.gridy++; c.insets = new Insets(22, 12, 18, 12);
+        JButton mineButton = new JButton();
+        mineButton.setToolTipText("Click to mine gold");
+        mineButton.setForeground(Color.WHITE); mineButton.setBackground(Color.BLACK);
+        mineButton.setOpaque(true); mineButton.setContentAreaFilled(true); mineButton.setBorderPainted(false);
+        mineButton.setFocusPainted(false); mineButton.setPreferredSize(new Dimension(300, 220));
+        java.net.URL goldResource = Main.class.getResource("/assets/gold.png");
+        File goldImage = new File("assets/gold.png");
+        if (goldResource != null || goldImage.exists()) {
+            ImageIcon icon = goldResource == null
+                    ? new ImageIcon(goldImage.getPath()) : new ImageIcon(goldResource);
+            Image scaled = icon.getImage().getScaledInstance(270, 190, Image.SCALE_SMOOTH);
+            mineButton.setIcon(new ImageIcon(scaled));
+        } else {
+            mineButton.setText("MINE GOLD");
+            mineButton.setFont(new Font("SansSerif", Font.BOLD, 24));
+        }
+        mineButton.addActionListener(e -> {
+            miningGold += goldPerClick;
+            miningMessage.setText("You mined " + goldPerClick + " gold. Keep going!");
+            refreshMining();
+        });
+        mine.add(mineButton, c);
+        c.gridy++; c.insets = new Insets(8, 12, 8, 12);
+        miningMessage.setForeground(new Color(105, 99, 89)); mine.add(miningMessage, c);
+
+        JPanel upgrades = panel();
+        upgrades.setLayout(new BoxLayout(upgrades, BoxLayout.Y_AXIS));
+        upgrades.setPreferredSize(new Dimension(300, 0));
+        JLabel upgradeTitle = new JLabel("Upgrade your tools");
+        upgradeTitle.setFont(new Font("Serif", Font.BOLD, 20)); upgradeTitle.setForeground(INK);
+        upgradeTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        upgrades.add(upgradeTitle);
+        upgrades.add(Box.createVerticalStrut(12));
+        stoneUpgrade = upgradeButton("Sharper Pickaxe", "+1 gold per click", e -> buyStonePickaxe());
+        ironUpgrade = upgradeButton("Iron Pickaxe", "+5 gold per click", e -> buyIronPickaxe());
+        helperUpgrade = upgradeButton("Mining Helper", "+1 gold each second", e -> buyMiningHelper());
+        upgrades.add(upgradeCard("Sharper Pickaxe", "+1 gold per click", stoneUpgrade));
+        upgrades.add(Box.createVerticalStrut(10));
+        upgrades.add(upgradeCard("Iron Pickaxe", "+5 gold per click", ironUpgrade));
+        upgrades.add(Box.createVerticalStrut(10));
+        upgrades.add(upgradeCard("Mining Helper", "+1 gold each second", helperUpgrade));
+
+        game.add(mine, BorderLayout.CENTER);
+        game.add(upgrades, BorderLayout.EAST);
+        refreshMining();
+        miningTimer = new Timer(1000, e -> {
+            if (helperRate > 0) {
+                miningGold += helperRate;
+                refreshMining();
+            }
+        });
+        miningTimer.start();
+        return game;
+    }
+
+    private JPanel upgradeCard(String title, String detail, JButton buy) {
+        JPanel card = new JPanel(new BorderLayout(0, 7));
+        card.setBackground(new Color(241, 237, 228));
+        card.setBorder(new EmptyBorder(10, 10, 10, 10));
+        card.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel name = new JLabel(title); name.setFont(new Font("SansSerif", Font.BOLD, 13)); name.setForeground(INK);
+        JLabel description = new JLabel(detail); description.setForeground(new Color(105, 99, 89));
+        JPanel text = new JPanel(new GridLayout(0, 1, 0, 3)); text.setOpaque(false);
+        text.add(name); text.add(description);
+        card.add(text, BorderLayout.CENTER);
+        card.add(buy, BorderLayout.SOUTH);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 92));
+        return card;
+    }
+
+    private JButton upgradeButton(String name, String detail, java.awt.event.ActionListener action) {
+        JButton button = new JButton();
+        button.setForeground(Color.WHITE); button.setBackground(Color.BLACK);
+        button.setOpaque(true); button.setContentAreaFilled(true); button.setBorderPainted(false);
+        button.setFocusPainted(false); button.addActionListener(action);
+        return button;
+    }
+
+    private void buyStonePickaxe() {
+        if (!canBuy(stoneCost)) return;
+        miningGold -= stoneCost; goldPerClick++; stoneLevels++;
+        stoneCost = Math.round(stoneCost * 1.6); miningMessage.setText("Sharper pickaxe purchased!"); refreshMining();
+    }
+
+    private void buyIronPickaxe() {
+        if (!canBuy(ironCost)) return;
+        miningGold -= ironCost; goldPerClick += 5; ironLevels++;
+        ironCost = Math.round(ironCost * 1.7); miningMessage.setText("Iron pickaxe purchased!"); refreshMining();
+    }
+
+    private void buyMiningHelper() {
+        if (!canBuy(helperCost)) return;
+        miningGold -= helperCost; helperRate++; helperLevels++;
+        helperCost = Math.round(helperCost * 1.8); miningMessage.setText("A mining helper joined the adventure!"); refreshMining();
+    }
+
+    private boolean canBuy(long cost) {
+        if (miningGold >= cost) return true;
+        miningMessage.setText("Mine " + (cost - miningGold) + " more gold to afford that upgrade.");
+        refreshMining();
+        return false;
+    }
+
+    private void refreshMining() {
+        miningBalance.setText(miningGold + " gold");
+        miningStats.setText("Gold per click: " + goldPerClick + "     ·     Automatic mining: " + helperRate + " gold/sec");
+        if (stoneUpgrade != null) {
+            stoneUpgrade.setText("Buy · " + stoneCost + " gold  (Level " + stoneLevels + ")");
+            ironUpgrade.setText("Buy · " + ironCost + " gold  (Level " + ironLevels + ")");
+            helperUpgrade.setText("Buy · " + helperCost + " gold  (Level " + helperLevels + ")");
+            stoneUpgrade.setEnabled(miningGold >= stoneCost);
+            ironUpgrade.setEnabled(miningGold >= ironCost);
+            helperUpgrade.setEnabled(miningGold >= helperCost);
+        }
     }
 
     private JPanel materialPanel() {
