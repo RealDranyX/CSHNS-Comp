@@ -45,6 +45,10 @@ Run the JAR with:
 ```sh
 java -jar GunterForge.jar
 ```
+### Alternative to Launching on macOs
+
+1. Open GunterForge.jar, click on "OK" when it says cannot scan the file
+2. Go to settings and then go to privacy settings, scroll down and click allow access to GunterForge.jar
 
 ## Using the app
 
