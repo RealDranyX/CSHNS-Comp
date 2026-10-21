@@ -8,6 +8,7 @@ import java.util.Map;
 import java.io.File;
 
 public class Main {
+   //these are all the variables we used for this project
     private static final Color INK = new Color(47, 45, 40);
     private static final Color PAPER = new Color(245, 242, 234);
     private static final Color CARD = new Color(255, 253, 248);
@@ -72,7 +73,7 @@ public class Main {
         root.add(tabs, BorderLayout.CENTER);
         return root;
     }
-
+//this is the page the customer will see and will use to order items
     private JPanel storePage() {
         JPanel catalog = new JPanel(new BorderLayout(0, 10));
         catalog.setOpaque(false);
@@ -106,7 +107,7 @@ public class Main {
         page.setBorder(new EmptyBorder(14, 0, 0, 0)); page.add(split);
         return page;
     }
-
+//these are the descriptions, and images of each item
     private JPanel productCard(String item) {
         JPanel card = panel(); card.setLayout(new BorderLayout(0, 8));
         card.add(new ProductArt(item), BorderLayout.CENTER);
@@ -122,7 +123,7 @@ public class Main {
         card.add(footer, BorderLayout.SOUTH);
         return card;
     }
-
+//this is where you fill in all the details of your order
     private JPanel checkoutForm() {
         JPanel form = new JPanel(new GridBagLayout()); form.setOpaque(false);
         GridBagConstraints c = new GridBagConstraints();
@@ -142,7 +143,7 @@ public class Main {
         c.gridy++; c.insets = new Insets(2, 0, 0, 0); form.add(place, c);
         return form;
     }
-
+// this is where you can see all tthe items added to your cart
     private JPanel cartSummary() {
         JPanel summary = new JPanel(new GridLayout(0, 1, 0, 3));
         summary.setOpaque(false);
@@ -155,7 +156,7 @@ public class Main {
         summary.add(totalLabel);
         return summary;
     }
-
+// this is the page where gunter looks at all the orders
     private JPanel queuePage() {
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -212,7 +213,7 @@ public class Main {
         refreshQueue();
         return page;
     }
-
+//this is the page of the minigame
     private JPanel miningPage() {
         JPanel game = new JPanel(new BorderLayout(16, 0));
         game.setOpaque(false);
@@ -290,7 +291,7 @@ public class Main {
         miningTimer.start();
         return game;
     }
-
+// this is the part where you can upgrade your clicker
     private JPanel upgradeCard(String title, String detail, JButton buy) {
         JPanel card = new JPanel(new BorderLayout(0, 7));
         card.setBackground(new Color(241, 237, 228));
@@ -352,7 +353,7 @@ public class Main {
             helperUpgrade.setEnabled(miningGold >= helperCost);
         }
     }
-
+// this is the amount of materials gunter will need to make the items
     private JPanel materialPanel() {
         JPanel box = new JPanel(new BorderLayout(0, 8)); box.setOpaque(false);
         box.add(section("Material prep", "Estimated planning units for queued work."), BorderLayout.NORTH);
@@ -417,7 +418,7 @@ public class Main {
         if (subtotal < GOLD_REWARD_DISCOUNT || miningGold < DISCOUNT_GOLD_COST) return 0;
         return GOLD_REWARD_DISCOUNT;
     }
-
+//this is where we calculate the price of items
     private void refreshCartTotals() {
         int subtotal = basketSubtotal();
         int discount = discountFor(subtotal);
