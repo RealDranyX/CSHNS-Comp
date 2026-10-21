@@ -37,6 +37,15 @@ public class Main {
     private final JLabel miningMessage = new JLabel("Click the gold to start mining.");
     private JButton stoneUpgrade, ironUpgrade, helperUpgrade;
     private Timer miningTimer;
+    private int swordPrice = 3;
+    private int plate_armorPrice = 2;
+    private int potPrice = 1;
+    private int chainPrice = 4;
+    private static final long DISCOUNT_GOLD_COST = 100000;
+    private static final int GOLD_REWARD_DISCOUNT = 3;
+    private final JLabel subtotalLabel = new JLabel("Subtotal: $0");
+    private final JLabel discountLabel = new JLabel("Mine 100,000 gold for $3 off");
+    private final JLabel totalLabel = new JLabel("Total: $0");
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Main().open());
@@ -83,7 +92,11 @@ public class Main {
         JScrollPane basketScroll = new JScrollPane(basketRows);
         basketScroll.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, new Color(230, 225, 214)));
         basketScroll.getViewport().setBackground(CARD);
-        checkout.add(basketScroll, BorderLayout.CENTER);
+        JPanel basketArea = new JPanel(new BorderLayout(0, 8));
+        basketArea.setOpaque(false);
+        basketArea.add(basketScroll, BorderLayout.CENTER);
+        basketArea.add(cartSummary(), BorderLayout.SOUTH);
+        checkout.add(basketArea, BorderLayout.CENTER);
         checkout.add(checkoutForm(), BorderLayout.SOUTH);
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, catalog, checkout);
@@ -128,6 +141,19 @@ public class Main {
         place.addActionListener(e -> placeOrder((String) finish.getSelectedItem(), (String) timing.getSelectedItem()));
         c.gridy++; c.insets = new Insets(2, 0, 0, 0); form.add(place, c);
         return form;
+    }
+
+    private JPanel cartSummary() {
+        JPanel summary = new JPanel(new GridLayout(0, 1, 0, 3));
+        summary.setOpaque(false);
+        summary.setBorder(new EmptyBorder(8, 2, 2, 2));
+        discountLabel.setForeground(new Color(69, 82, 60));
+        totalLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        totalLabel.setForeground(INK);
+        summary.add(subtotalLabel);
+        summary.add(discountLabel);
+        summary.add(totalLabel);
+        return summary;
     }
 
     private JPanel queuePage() {
@@ -212,11 +238,11 @@ public class Main {
         c.gridy++; c.insets = new Insets(22, 12, 18, 12);
         JButton mineButton = new JButton();
         mineButton.setToolTipText("Click to mine gold");
-        mineButton.setForeground(Color.WHITE); mineButton.setBackground(Color.BLACK);
+        mineButton.setForeground(Color.WHITE); mineButton.setBackground(Color.WHITE);
         mineButton.setOpaque(true); mineButton.setContentAreaFilled(true); mineButton.setBorderPainted(false);
         mineButton.setFocusPainted(false); mineButton.setPreferredSize(new Dimension(300, 220));
-        java.net.URL goldResource = Main.class.getResource("/assets/gold.png");
-        File goldImage = new File("assets/gold.png");
+        java.net.URL goldResource = Main.class.getResource("/assets/gold-removebg-preview.png");
+        File goldImage = new File("assets/gold-removebg-preview.png");
         if (goldResource != null || goldImage.exists()) {
             ImageIcon icon = goldResource == null
                     ? new ImageIcon(goldImage.getPath()) : new ImageIcon(goldResource);
@@ -316,6 +342,7 @@ public class Main {
     private void refreshMining() {
         miningBalance.setText(miningGold + " gold");
         miningStats.setText("Gold per click: " + goldPerClick + "     ·     Automatic mining: " + helperRate + " gold/sec");
+        refreshCartTotals();
         if (stoneUpgrade != null) {
             stoneUpgrade.setText("Buy · " + stoneCost + " gold  (Level " + stoneLevels + ")");
             ironUpgrade.setText("Buy · " + ironCost + " gold  (Level " + ironLevels + ")");
@@ -355,7 +382,10 @@ public class Main {
             empty.setBorder(new EmptyBorder(14, 4, 14, 4)); basketRows.add(empty);
         } else basket.forEach((item, qty) -> {
             JPanel line = new JPanel(new BorderLayout(6, 0)); line.setOpaque(false); line.setBorder(new EmptyBorder(6, 2, 6, 2));
-            JLabel label = new JLabel(item + "  ×  " + qty); label.setFont(new Font("SansSerif", Font.BOLD, 12));
+            int unitPrice = priceOf(item);
+            JLabel label = new JLabel(item + "  ×  " + qty + "   ·   $" + unitPrice
+                    + " each   ·   $" + (unitPrice * qty));
+            label.setFont(new Font("SansSerif", Font.BOLD, 12));
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0)); buttons.setOpaque(false);
             JButton minus = new JButton("−"), plus = new JButton("+");
             minus.addActionListener(e -> adjustBasket(item, -1)); plus.addActionListener(e -> adjustBasket(item, 1));
@@ -363,18 +393,64 @@ public class Main {
             basketRows.add(line);
         });
         basketRows.revalidate(); basketRows.repaint();
+        refreshCartTotals();
+    }
+
+    private int priceOf(String item) {
+        switch (item) {
+            case "Sword": return swordPrice;
+            case "Plate Armor": return plate_armorPrice;
+            case "Chain Mail": return chainPrice;
+            default: return potPrice;
+        }
+    }
+
+    private int basketSubtotal() {
+        int subtotal = 0;
+        for (Map.Entry<String, Integer> entry : basket.entrySet()) {
+            subtotal += priceOf(entry.getKey()) * entry.getValue();
+        }
+        return subtotal;
+    }
+
+    private int discountFor(int subtotal) {
+        if (subtotal < GOLD_REWARD_DISCOUNT || miningGold < DISCOUNT_GOLD_COST) return 0;
+        return GOLD_REWARD_DISCOUNT;
+    }
+
+    private void refreshCartTotals() {
+        int subtotal = basketSubtotal();
+        int discount = discountFor(subtotal);
+        subtotalLabel.setText("Subtotal: $" + subtotal);
+        if (discount > 0) {
+            discountLabel.setText("Mining reward: -$" + discount + " (uses 100,000 gold)");
+        } else if (subtotal > 0 && subtotal < GOLD_REWARD_DISCOUNT && miningGold >= DISCOUNT_GOLD_COST) {
+            discountLabel.setText("Add $" + (GOLD_REWARD_DISCOUNT - subtotal) + " to use the $3 reward");
+        } else if (subtotal > 0 && miningGold < DISCOUNT_GOLD_COST) {
+            discountLabel.setText("Mine " + (DISCOUNT_GOLD_COST - miningGold) + " more gold for $3 off");
+        } else {
+            discountLabel.setText("Mine 100,000 gold for $3 off");
+        }
+        totalLabel.setText("Total: $" + (subtotal - discount));
     }
 
     private void placeOrder(String finish, String timing) {
         String name = customer.getText().trim();
         if (name.isEmpty()) { JOptionPane.showMessageDialog(null, "Enter your name before placing the order."); customer.requestFocus(); return; }
         if (basket.isEmpty()) { JOptionPane.showMessageDialog(null, "Add at least one item to your order."); return; }
-        orders.add(new Order(name, new LinkedHashMap<>(basket), finish, timing, notes.getText().trim()));
+        int subtotal = basketSubtotal();
+        int discount = discountFor(subtotal);
+        int total = subtotal - discount;
+        if (discount > 0) miningGold -= DISCOUNT_GOLD_COST;
+        orders.add(new Order(name, new LinkedHashMap<>(basket), finish, timing, notes.getText().trim(), subtotal, discount, total));
         basket.clear(); customer.setText(""); notes.setText(""); refreshBasket(); refreshQueue();
+        refreshMining();
         tabs.setSelectedIndex(1);
         selectedOrder = orders.size() - 1;
         refreshQueue();
-        JOptionPane.showMessageDialog(null, "Your order has been added to Gunter's queue.", "Order placed", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, "Your order has been added to Gunter's queue.\n"
+                + "Subtotal: $" + subtotal + "\nMining discount: -$" + discount + "\nTotal: $" + total,
+                "Order placed", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void updateStatus(String status) {
@@ -396,7 +472,8 @@ public class Main {
             Order order = orders.get(i);
             final int index = i;
             JButton row = new JButton("#" + (i + 1) + "   " + order.customer + "   |   "
-                    + itemText(order.items) + "   |   " + order.timing + "   |   " + order.status);
+                    + itemText(order.items) + "   |   " + order.timing + "   |   " + order.status
+                    + "   |   $" + order.total);
             row.setHorizontalAlignment(SwingConstants.LEFT);
             row.setFont(new Font("SansSerif", Font.PLAIN, 13));
             row.setOpaque(true);
@@ -436,7 +513,8 @@ public class Main {
             orderDetails.setText("Select an order to view its finish and notes."); return;
         }
         Order o = orders.get(selectedOrder);
-        orderDetails.setText("Finish: " + o.finish + "   ·   Notes: " + (o.notes.isEmpty() ? "None" : o.notes));
+        orderDetails.setText("Total: $" + o.total + "   ·   Mining discount: $" + o.discount
+                + "   ·   Finish: " + o.finish + "   ·   Notes: " + (o.notes.isEmpty() ? "None" : o.notes));
     }
 
     private JPanel section(String title, String subtitle) {
@@ -460,10 +538,10 @@ public class Main {
 
     private String description(String item) {
         switch (item) {
-            case "Sword": return "Balanced hand-forged steel";
-            case "Plate Armor": return "Fitted protection";
-            case "Chain Mail": return "Flexible linked rings";
-            default: return "Made for the hearth";
+            case "Sword": return "Balanced hand-forged steel, Price is $" + swordPrice;
+            case "Plate Armor": return "Fitted protection, Price is $" + plate_armorPrice;
+            case "Chain Mail": return "Flexible linked rings, Price is $" + chainPrice;
+            default: return "Made for the hearth, Price is $" + potPrice;
         }
     }
 
@@ -476,9 +554,12 @@ public class Main {
     private static class Order {
         final String customer, finish, timing, notes;
         final Map<String, Integer> items;
+        final int subtotal, discount, total;
         String status = "Queued";
-        Order(String customer, Map<String, Integer> items, String finish, String timing, String notes) {
+        Order(String customer, Map<String, Integer> items, String finish, String timing, String notes,
+              int subtotal, int discount, int total) {
             this.customer = customer; this.items = items; this.finish = finish; this.timing = timing; this.notes = notes;
+            this.subtotal = subtotal; this.discount = discount; this.total = total;
         }
     }
 }
