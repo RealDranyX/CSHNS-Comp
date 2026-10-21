@@ -2,11 +2,11 @@
 
 Gunter's Forge is a Java desktop application for taking blacksmith orders and keeping track of work in the shop. Customers can choose products, adjust quantities, enter order details, see prices in the cart, and add orders to Gunter's queue. The shop view tracks each order's status and estimates the materials needed for queued work. The app also includes Gunter's Mining Adventure, a gold clicker game with upgrades. Mining 100,000 gold earns a $3 discount on an order with a subtotal of at least $3.
 
-The project uses Java Swing for the interface and Java2D for the product illustrations. The mining game uses the gold image in the `assets` folder. No HTML, CSS, JavaScript, or third-party libraries are required. The source is kept small and organized so the team can make changes quickly during the competition.
+The project uses Java Swing for the interface and Java2D for the product illustrations. The mining game uses the gold image in the `assets` folder.
 
 ## AI use disclosure
 
-AI tools were used to help develop and refine the application's user interface (UI). The team created the core application mechanisms, including order handling, cart pricing, the mining game, queue management, and material planning. These features run locally in the Java application; there is no separate server backend. The team should review the implementation, understand how it works, and be prepared to explain or modify it during the competition. No AI-generated code comments are included.
+AI tools were used to help develop and refine the application's user interface (UI). The team created the core application mechanisms, including order handling, cart pricing, the mining game, queue management, and material planning. These features run locally in the Java application/scenario; there is no separate server backend.
 
 ## Requirements
 
