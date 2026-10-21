@@ -1,12 +1,12 @@
 ## Gunter's Forge
 
-Gunter's Forge is a native Java desktop application for taking blacksmith orders and keeping track of work in the shop. Customers can choose products, adjust quantities, provide order details, and add the order to Gunter's queue. The shop view tracks order status and estimates the materials needed for work that has not started yet.
+Gunter's Forge is a Java desktop application for taking blacksmith orders and keeping track of work in the shop. Customers can choose products, adjust quantities, enter order details, see prices in the cart, and add orders to Gunter's queue. The shop view tracks each order's status and estimates the materials needed for queued work. The app also includes Gunter's Mining Adventure, a gold clicker game with upgrades. Mining 100,000 gold earns a $3 discount on an order with a subtotal of at least $3.
 
-The project uses Java Swing for the interface and Java2D for the product illustrations. It has no HTML, CSS, JavaScript, external images, or third-party libraries. The source is kept small and organized so the team can make changes quickly during the competition.
+The project uses Java Swing for the interface and Java2D for the product illustrations. The mining game uses the gold image in the `assets` folder. No HTML, CSS, JavaScript, or third-party libraries are required. The source is kept small and organized so the team can make changes quickly during the competition.
 
 ## AI use disclosure
 
-AI tools were used to help develop and refine the application's user interface (UI). The team created the core application mechanisms, including order handling, queue management, and material planning. This version runs those features locally in the Java application and does not have a separate server backend. The team should review the implementation, understand how it works, and be prepared to explain or modify it during the competition. No AI-generated code comments are included.
+AI tools were used to help develop and refine the application's user interface (UI). The team created the core application mechanisms, including order handling, cart pricing, the mining game, queue management, and material planning. These features run locally in the Java application; there is no separate server backend. The team should review the implementation, understand how it works, and be prepared to explain or modify it during the competition. No AI-generated code comments are included.
 
 ## Requirements
 
@@ -17,19 +17,20 @@ AI tools were used to help develop and refine the application's user interface (
 
 ### macOS launcher
 
-1. Download and extract the full project ZIP.
-2. Open `Gunter's Forge.app` or double-click `Run Gunter's Forge.command`.
-3. The application window opens with **Place an order** and **Shop queue** tabs.
+1. Keep the project files together in the project folder.
+2. Double-click `Run Gunter's Forge.command`.
+3. The application opens to the order page, with a separate shop queue tab.
 
-The launcher requires Java to be installed. Keep the project files together when extracting the ZIP.
+The launcher checks for Java on the computer and then for the Java runtime bundled with VS Code. If neither is available, install a JDK and try again.
 
 ### Compile and run from source
 
 Open a terminal in the project folder and run:
 
 ```sh
-mkdir -p out
-javac -d out src/Main.java src/ProductArt.java
+mkdir -p out/assets
+javac --release 8 -d out Main.java ProductArt.java
+cp assets/gold-removebg-preview.png out/assets/
 java -cp out Main
 ```
 
@@ -39,7 +40,7 @@ To create a runnable JAR after compiling:
 jar --create --file GunterForge.jar --main-class Main -C out .
 ```
 
-Run it with:
+Run the JAR with:
 
 ```sh
 java -jar GunterForge.jar
@@ -49,61 +50,71 @@ java -jar GunterForge.jar
 
 ### Place an order
 
-The **Place an order** tab shows a product catalog and a checkout panel. Select **Add** on a product card to add one unit to the basket. Use the plus and minus controls in the basket to adjust quantities. The form records the customer's name, finish preference, timing request, and optional notes.
+The **Place an order** tab shows the product catalog and checkout area. Add items to the basket, change their quantities, enter a customer name, choose a finish and timing request, and add optional notes. The cart shows each item's price, the subtotal, any mining discount, and the final total. Place the order to add it to Gunter's queue.
 
-The four available products are:
+The available products and prices are:
 
-- Sword
-- Plate Armor
-- Chain Mail
-- Cooking Pot
+- Sword — $3
+- Plate Armor — $2
+- Chain Mail — $4
+- Cooking Pot — $1
 
-To submit an order, enter a customer name and add at least one item. A confirmation appears when the order is placed, and the basket resets for the next customer. Rush requests are marked for Gunter to review; the app does not promise a completion time.
+The $3 mining discount requires at least 100,000 gold and a cart subtotal of at least $3. The gold is spent when the discounted order is placed. Rush requests are marked for Gunter to review; the app does not promise a completion time.
+
+### Play Gunter's Mining Adventure
+
+Click the gold image to mine gold. Use gold to purchase upgrades:
+
+- **Sharper Pickaxe** increases the gold earned per click.
+- **Iron Pickaxe** increases the gold earned per click further.
+- **Mining Helper** earns gold automatically over time.
+
+Gold and upgrades last only while the application is open.
 
 ### Manage the shop queue
 
-Open the **Shop queue** tab to see orders in the order they were placed. Select an order and choose a status to move it through **Queued**, **In progress**, and **Ready for pickup**. Orders can also be removed. The summary shows the number of open, ready, and rush orders, and the workload message reflects outstanding item quantities.
+Open the **Shop queue** tab to see orders in the order they were placed. Select an order to view its details, then update its status through **Queued**, **In progress**, and **Ready for pickup**. Orders can also be removed. The summary shows open, ready, and rush orders, along with an estimate of the shop's workload.
 
 ### Prepare materials
 
-The material panel totals planning units for queued work. It includes iron, wood, leather, and charcoal. Work that has moved to **In progress** is excluded from the prep totals, and orders marked **Ready for pickup** do not count as outstanding work.
-
-The sample recipes are defined near the top of `src/Main.java` in the `RECIPE` array. Rows match the `ITEMS` array, and columns match the `MATERIALS` array. The numbers are demonstration estimates rather than measured weights, so adjust them to match the shop's real recipes.
+The material panel estimates the materials needed for queued work. It includes iron, wood, leather, and charcoal. Only orders with **Queued** status are included in the material totals. The sample recipes are defined near the top of `Main.java` in the `RECIPE` array. Rows match the `ITEMS` array, and columns match the `MATERIALS` array. These are demonstration estimates; adjust them to match the shop's real recipes before relying on them for production planning.
 
 ## Source files
 
 ```text
-Gunter's Forge/
-├── src/
-│   ├── Main.java
-│   └── ProductArt.java
-├── out/                         compiled classes after building
-├── GunterForge.jar              runnable Java archive
-├── Gunter's Forge.app/          macOS app launcher
-├── Run Gunter's Forge.command   macOS terminal launcher
+CSHNS-Comp-main-3/
+├── Main.java                       main application, cart, queue, and mining game
+├── ProductArt.java                 Java2D product illustrations
+├── assets/
+│   └── gold-removebg-preview.png   mining game image
+├── out/                            compiled classes after building
+├── GunterForge.jar                 runnable Java archive
+├── Run Gunter's Forge.command      macOS launcher
 └── README.md
 ```
 
-### `src/Main.java`
+### `Main.java`
 
-This is the main application file. It contains the product list, material recipe table, order form, basket, queue, status controls, and material summary. Most competition changes can be made here.
+This is the main application file. It contains the product and material lists, price values, order form, cart, queue, mining game, upgrades, and material summary. Most competition changes can be made here.
 
 Useful values to edit:
 
 - `ITEMS` controls the products shown in the catalog.
 - `MATERIALS` controls the names shown in the material summary.
-- `RECIPE` contains the estimated amount of each material for each product.
+- `RECIPE` contains estimated material amounts for each product.
 - `STATUSES` controls the order progress options.
-- `description()` provides the short text shown on each product card.
+- The product price fields control the listed prices.
+- `DISCOUNT_GOLD_COST` and `GOLD_REWARD_DISCOUNT` control the mining reward.
+- `description()` provides the short text shown on product cards.
 
-When adding a new product, keep `ITEMS` and `RECIPE` rows in the same order, add a product illustration case in `ProductArt.java`, and add its description in `description()`.
+When adding a product, keep `ITEMS` and `RECIPE` rows in the same order, add an illustration case in `ProductArt.java`, set its price, and add its description in `description()`.
 
-### `src/ProductArt.java`
+### `ProductArt.java`
 
-This file draws the four product illustrations with Java2D shapes. It contains no image files or extra libraries. Each product card uses the same illustration area, and the two-by-two catalog grid keeps the cards aligned as the window changes size.
+This file draws the four product illustrations with Java2D shapes. Each product card uses a consistent illustration area, and the catalog keeps the product cards aligned as the window changes size.
 
 ## Data and limitations
 
-Orders stay in memory while the app is open. Closing the application clears the queue. This version does not use an online database, sync orders between computers, process payments, calculate prices, or send pickup notifications.
+Orders, mining gold, and upgrade levels stay in memory while the application is open. Closing the app clears this information. The application does not use an online database, sync orders between computers, process payments, or send pickup notifications.
 
-The material prep counts are estimates based on the recipe values in the source. The shop should set those values to its real material use before relying on them for production planning.
+Material totals are estimates based on the recipe values in the source. Gunter should set those values to the shop's real material use before relying on them for production planning.
